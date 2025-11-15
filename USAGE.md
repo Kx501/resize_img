@@ -38,6 +38,7 @@ python resize_img.py input.jpg -o ./resized/
 - `-v, --verbose`: 显示详细输出
 - `--dry-run`: 模拟运行，不实际修改文件
 - `--rename`: 按序号重命名所有图片（生成00001.jpg, 00002.png等文件名）
+- `--per-folder`: 在每个子文件夹中重新开始排序（仅当--rename启用时有效，默认关闭）
 
 ## 使用示例
 
@@ -94,6 +95,9 @@ python resize_img.py ./photos/ --rename -o ./renamed_photos/
 
 # 按序号重命名并显示详细信息
 python resize_img.py ./photos/ --rename -v
+
+# 按序号重命名，每个子文件夹重新开始排序
+python resize_img.py ./photos/ --rename --per-folder
 ```
 
 ## 实际应用场景

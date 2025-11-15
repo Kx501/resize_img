@@ -46,6 +46,9 @@ python resize_img.py input.jpg --output ./resized/
 
 # 按序号重命名所有图片
 python resize_img.py /path/to/images/ --rename
+
+# 按序号重命名，每个子文件夹重新开始排序
+python resize_img.py /path/to/images/ --rename --per-folder
 ```
 
 ### 参数说明
@@ -55,6 +58,7 @@ python resize_img.py /path/to/images/ --rename
 - `--max-size`, `-s`: 最大边长（可选，默认为542）
 - `--quality`, `-q`: 图片质量/压缩级别（可选，默认100，不压缩。）
 - `--rename`: 按序号重命名所有图片（可选，生成00001.jpg, 00002.png等文件名）
+- `--per-folder`: 在每个子文件夹中重新开始排序（可选，仅当--rename启用时有效，默认关闭）
 
 ## 技术原理
 

@@ -106,6 +106,9 @@ class QQImageResizer:
                 
                 # 保存图片
                 if file_ext in {'.jpg', '.jpeg'}:
+                    # JPEG只支持RGB模式，需要转换调色板模式等
+                    if resized_img.mode != 'RGB':
+                        resized_img = resized_img.convert('RGB')
                     # JPEG使用quality参数 (1-100)
                     resized_img.save(output_path, 'JPEG', quality=self.quality)
                 else:  # PNG
@@ -121,7 +124,7 @@ class QQImageResizer:
             print(f"处理图片失败 {input_path}: {e}")
             return False
     
-    def process_directory(self, input_dir, output_dir=None, rename=False):
+    def process_directory(self, input_dir, output_dir=None, rename=False, per_folder=False):
         """
         处理目录中的所有图片
         
@@ -129,6 +132,7 @@ class QQImageResizer:
             input_dir (str): 输入目录路径
             output_dir (str, optional): 输出目录路径
             rename (bool): 是否按序号重命名所有图片
+            per_folder (bool): 是否在每个子文件夹中重新开始排序（仅当rename为True时有效）
             
         Returns:
             tuple: (成功数量, 失败数量, 跳过数量)
@@ -152,6 +156,7 @@ class QQImageResizer:
         # 如果启用重命名，使用计数器
         if rename:
             counter = 1
+            current_folder = None  # 用于跟踪当前处理的文件夹
             
         # 遍历目录中的所有文件
         for file_path in input_path.rglob('*'):
@@ -159,13 +164,23 @@ class QQImageResizer:
                 file_ext = file_path.suffix.lower()
                 
                 if rename:
+                    # 如果启用per_folder选项，检查文件夹是否改变
+                    if per_folder:
+                        file_folder = file_path.parent
+                        if current_folder is None or file_folder != current_folder:
+                            # 文件夹改变，重置计数器
+                            current_folder = file_folder
+                            counter = 1
+                    
                     # 重命名模式：生成序号文件名
                     while True:
                         new_name = f"{counter:05d}{file_ext}"
                         if output_dir:
+                            # 如果指定了输出目录，保存到输出目录的根目录
                             target_file = output_path / new_name
                         else:
-                            target_file = input_path / new_name
+                            # 如果输出目录是原目录，保存到原文件所在的目录
+                            target_file = file_path.parent / new_name
                         
                         # 检查冲突：如果目标文件已存在且不是当前文件，序号递增
                         if target_file.exists() and target_file != file_path:
@@ -175,45 +190,58 @@ class QQImageResizer:
                     
                     # 检查是否需要缩放
                     try:
+                        # 先读取图片尺寸，然后关闭文件
                         with Image.open(file_path) as img:
                             width, height = img.size
                             needs_resize = self.should_resize(width, height)
-                            
-                            if needs_resize:
-                                # 需要缩放：缩放后保存到新文件名
+                        
+                        # 在with块外进行文件操作，确保文件句柄已释放
+                        if needs_resize:
+                            # 需要缩放：重新打开文件进行缩放
+                            with Image.open(file_path) as img:
                                 new_width, new_height = self.calculate_new_size(width, height)
                                 print(f"缩放并重命名: {file_path.name} -> {new_name} ({width}x{height}) -> ({new_width}x{new_height})")
                                 
                                 resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                                 
                                 if file_ext in {'.jpg', '.jpeg'}:
+                                    # JPEG只支持RGB模式，需要转换调色板模式等
+                                    if resized_img.mode != 'RGB':
+                                        resized_img = resized_img.convert('RGB')
                                     resized_img.save(target_file, 'JPEG', quality=self.quality)
                                 else:  # PNG
                                     compress_level = int((100 - self.quality) * 9 / 99) if self.quality < 100 else 0
                                     resized_img.save(target_file, 'PNG', compress_level=compress_level)
-                                
-                                success_count += 1
-                            else:
-                                # 不需要缩放：根据输出目录决定重命名或复制
-                                if output_dir and Path(output_dir).resolve() != input_path.resolve():
-                                    # 输出目录不是原目录：复制并重命名
-                                    shutil.copy2(file_path, target_file)
-                                    print(f"复制并重命名: {file_path.name} -> {new_name} ({width}x{height})")
-                                else:
-                                    # 输出目录是原目录：直接重命名
-                                    if file_path != target_file:
-                                        file_path.rename(target_file)
-                                        print(f"重命名: {file_path.name} -> {new_name} ({width}x{height})")
-                                    else:
-                                        # 文件名已经是目标文件名，跳过
-                                        print(f"跳过（已是目标文件名）: {file_path.name} ({width}x{height})")
-                                        skip_count += 1
-                                        counter += 1
-                                        continue
-                                
-                                success_count += 1
                             
-                            counter += 1
+                            # 如果输出目录是原目录且原文件和新文件不同，删除原文件
+                            if (not output_dir or Path(output_dir).resolve() == input_path.resolve()) and file_path != target_file:
+                                try:
+                                    file_path.unlink()
+                                except Exception as e:
+                                    print(f"警告: 无法删除原文件 {file_path}: {e}")
+                            
+                            success_count += 1
+                        else:
+                            # 不需要缩放：根据输出目录决定重命名或复制
+                            if output_dir and Path(output_dir).resolve() != input_path.resolve():
+                                # 输出目录不是原目录：复制并重命名
+                                shutil.copy2(file_path, target_file)
+                                print(f"复制并重命名: {file_path.name} -> {new_name} ({width}x{height})")
+                            else:
+                                # 输出目录是原目录：直接重命名（文件已在with块外，确保已关闭）
+                                if file_path != target_file:
+                                    file_path.rename(target_file)
+                                    print(f"重命名: {file_path.name} -> {new_name} ({width}x{height})")
+                                else:
+                                    # 文件名已经是目标文件名，跳过
+                                    print(f"跳过（已是目标文件名）: {file_path.name} ({width}x{height})")
+                                    skip_count += 1
+                                    counter += 1
+                                    continue
+                            
+                            success_count += 1
+                        
+                        counter += 1
                     except Exception as e:
                         print(f"处理图片失败 {file_path}: {e}")
                         fail_count += 1
@@ -253,6 +281,7 @@ def main():
   python resize_img.py input.jpg -s 500            # 自定义最大边长
   python resize_img.py input.jpg --quality 85      # 设置图片质量
   python resize_img.py /path/to/images/ --rename   # 按序号重命名所有图片
+  python resize_img.py /path/to/images/ --rename --per-folder  # 每文件夹重新排序
   python resize_img.py /path/to/images/ --recursive # 递归处理子目录
         """
     )
@@ -265,6 +294,8 @@ def main():
                        help='图片质量/压缩级别 (1-100，默认: 100，不压缩。)')
     parser.add_argument('--rename', action='store_true',
                        help='按序号重命名所有图片')
+    parser.add_argument('--per-folder', action='store_true',
+                       help='在每个子文件夹中重新开始排序（仅当--rename启用时有效，默认关闭）')
     parser.add_argument('-r', '--recursive', action='store_true',
                        help='递归处理子目录')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -290,6 +321,8 @@ def main():
         print(f"最大边长: {args.max_size}px")
         print(f"图片质量: {args.quality}")
         print(f"按序号重命名: {'是' if args.rename else '否'}")
+        if args.rename:
+            print(f"每文件夹重新排序: {'是' if args.per_folder else '否'}")
         print(f"递归处理: {'是' if args.recursive else '否'}")
         print(f"模拟运行: {'是' if args.dry_run else '否'}")
         print("-" * 50)
@@ -357,7 +390,7 @@ def main():
             print(f"  ✗ 将失败: {fail_count} 张")
         else:
             # 实际处理
-            success, fail, skip = resizer.process_directory(args.input_path, args.output, args.rename)
+            success, fail, skip = resizer.process_directory(args.input_path, args.output, args.rename, args.per_folder)
             
             print(f"\n处理完成:")
             print(f"  ✓ 成功缩放: {success} 张")
