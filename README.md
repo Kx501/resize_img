@@ -43,6 +43,9 @@ python resize_img.py /path/to/images/
 
 # 指定输出目录
 python resize_img.py input.jpg --output ./resized/
+
+# 按序号重命名所有图片
+python resize_img.py /path/to/images/ --rename
 ```
 
 ### 参数说明
@@ -51,6 +54,7 @@ python resize_img.py input.jpg --output ./resized/
 - `--output`, `-o`: 输出目录路径（可选，默认为当前目录）
 - `--max-size`, `-s`: 最大边长（可选，默认为542）
 - `--quality`, `-q`: 图片质量/压缩级别（可选，默认100，不压缩。）
+- `--rename`: 按序号重命名所有图片（可选，生成00001.jpg, 00002.png等文件名）
 
 ## 技术原理
 

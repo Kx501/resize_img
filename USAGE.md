@@ -37,6 +37,7 @@ python resize_img.py input.jpg -o ./resized/
 - `-r, --recursive`: 递归处理子目录
 - `-v, --verbose`: 显示详细输出
 - `--dry-run`: 模拟运行，不实际修改文件
+- `--rename`: 按序号重命名所有图片（生成00001.jpg, 00002.png等文件名）
 
 ## 使用示例
 
@@ -82,6 +83,19 @@ python resize_img.py ./photos/ --dry-run -v
 python resize_img.py ./photos/ --dry-run -r -v
 ```
 
+### 示例4：按序号重命名
+
+```bash
+# 按序号重命名目录中的所有图片（在原目录中重命名）
+python resize_img.py ./photos/ --rename
+
+# 按序号重命名并保存到新目录
+python resize_img.py ./photos/ --rename -o ./renamed_photos/
+
+# 按序号重命名并显示详细信息
+python resize_img.py ./photos/ --rename -v
+```
+
 ## 实际应用场景
 
 ### 场景1：QQ聊天图片优化
@@ -105,6 +119,13 @@ python resize_img.py ./手机相册/ -r -o ./优化后的图片/ -v
 python resize_img.py ./website_images/ -s 800 -o ./optimized/ -v
 ```
 
+### 场景4：批量重命名图片
+
+```bash
+# 将图片按序号重命名，方便管理
+python resize_img.py ./photos/ --rename -o ./renamed/ -v
+```
+
 ## 处理结果说明
 
 ### 处理状态
@@ -121,6 +142,7 @@ python resize_img.py ./website_images/ -s 800 -o ./optimized/ -v
 图片质量: 100
 递归处理: 是
 模拟运行: 否
+按序号重命名: 否
 --------------------------------------------------
 缩放图片: ./photos/image1.jpg (800x600) -> (542x406)
 图片尺寸合适，跳过: ./photos/image2.jpg (400x300)
