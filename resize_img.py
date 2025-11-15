@@ -16,14 +16,18 @@ from PIL import Image
 class QQImageResizer:
     """QQ图片缩放器"""
     
-    def __init__(self, max_size=542):
+    def __init__(self, max_size=542, quality=100):
         """
         初始化缩放器
         
         Args:
             max_size (int): 最大边长，默认为542像素
+            quality (int): 图片质量/压缩级别 (1-100，默认: 100，不压缩)
+                          对于JPEG：直接使用quality值
+                          对于PNG：映射到compress_level (100->0无压缩, 1->9最大压缩)
         """
         self.max_size = max_size
+        self.quality = quality
         self.supported_formats = {'.jpg', '.jpeg', '.png'}
     
     def should_resize(self, width, height):
@@ -101,9 +105,14 @@ class QQImageResizer:
                 
                 # 保存图片
                 if file_ext in {'.jpg', '.jpeg'}:
-                    resized_img.save(output_path, 'JPEG', quality=95)
+                    # JPEG使用quality参数 (1-100)
+                    resized_img.save(output_path, 'JPEG', quality=self.quality)
                 else:  # PNG
-                    resized_img.save(output_path, 'PNG', optimize=True)
+                    # PNG将quality映射到compress_level (0-9)
+                    # quality=100 -> compress_level=0 (无压缩)
+                    # quality=1 -> compress_level=9 (最大压缩)
+                    compress_level = int((100 - self.quality) * 9 / 99) if self.quality < 100 else 0
+                    resized_img.save(output_path, 'PNG', compress_level=compress_level)
                 
                 return True
                 
@@ -171,7 +180,7 @@ def main():
   python resize_img.py /path/to/images/            # 缩放目录中的所有图片
   python resize_img.py input.jpg -o ./resized/     # 指定输出目录
   python resize_img.py input.jpg -s 500            # 自定义最大边长
-  python resize_img.py input.jpg --quality 85      # 设置JPEG质量
+  python resize_img.py input.jpg --quality 85      # 设置图片质量
   python resize_img.py /path/to/images/ --recursive # 递归处理子目录
         """
     )
@@ -180,8 +189,8 @@ def main():
     parser.add_argument('-o', '--output', help='输出目录路径')
     parser.add_argument('-s', '--max-size', type=int, default=542, 
                        help='最大边长（默认: 542）')
-    parser.add_argument('-q', '--quality', type=int, default=95,
-                       help='JPEG图片质量 (1-100，默认: 95)')
+    parser.add_argument('-q', '--quality', type=int, default=100,
+                       help='图片质量/压缩级别 (1-100，默认: 100，不压缩。)')
     parser.add_argument('-r', '--recursive', action='store_true',
                        help='递归处理子目录')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -201,12 +210,12 @@ def main():
         sys.exit(1)
     
     # 创建缩放器实例
-    resizer = QQImageResizer(max_size=args.max_size)
+    resizer = QQImageResizer(max_size=args.max_size, quality=args.quality)
     
     # 设置详细模式
     if args.verbose:
         print(f"最大边长: {args.max_size}px")
-        print(f"JPEG质量: {args.quality}")
+        print(f"图片质量: {args.quality}")
         print(f"递归处理: {'是' if args.recursive else '否'}")
         print(f"模拟运行: {'是' if args.dry_run else '否'}")
         print("-" * 50)

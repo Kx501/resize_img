@@ -50,6 +50,7 @@ python resize_img.py input.jpg --output ./resized/
 - `input_path`: 输入文件或目录路径（必需）
 - `--output`, `-o`: 输出目录路径（可选，默认为当前目录）
 - `--max-size`, `-s`: 最大边长（可选，默认为542）
+- `--quality`, `-q`: 图片质量/压缩级别（可选，默认100，不压缩。）
 
 ## 技术原理
 
@@ -81,6 +82,9 @@ qq-image-resizer/
 MIT License
 
 ## 更新日志
+
+### v1.0.1
+- 修改默认参数
 
 ### v1.0.0
 - 初始版本发布

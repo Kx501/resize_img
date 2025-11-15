@@ -31,9 +31,9 @@ python resize_img.py input.jpg -o ./resized/
 
 ### 可选参数
 
-- `-o, --output`: 输出目录路径（默认：覆盖原文件）
+- `-o, --output`: 输出目录路径（默认：）
 - `-s, --max-size`: 最大边长（默认：542像素）
-- `-q, --quality`: JPEG图片质量（1-100，默认：95）
+- `-q, --quality`: 图片质量/压缩级别（1-100，默认：100，不压缩。控制所有类型：JPEG直接使用，PNG映射到compress_level）
 - `-r, --recursive`: 递归处理子目录
 - `-v, --verbose`: 显示详细输出
 - `--dry-run`: 模拟运行，不实际修改文件
@@ -52,7 +52,7 @@ python resize_img.py photo.jpg -o ./resized/
 # 自定义最大边长为500像素
 python resize_img.py photo.jpg -s 500
 
-# 设置JPEG质量为85
+# 设置图片质量为85（控制所有类型压缩）
 python resize_img.py photo.jpg -q 85
 ```
 
@@ -118,7 +118,7 @@ python resize_img.py ./website_images/ -s 800 -o ./optimized/ -v
 ```
 开始处理目录: ./photos/
 最大边长: 542px
-JPEG质量: 95
+图片质量: 100
 递归处理: 是
 模拟运行: 否
 --------------------------------------------------
@@ -139,7 +139,7 @@ JPEG质量: 95
 2. **文件权限**: 确保有读写权限
 3. **备份重要文件**: 建议先使用 `--dry-run` 测试
 4. **大文件处理**: 超大图片可能需要更多内存
-5. **质量设置**: JPEG质量越高，文件越大
+5. **质量设置**: quality参数统一控制所有类型的压缩（JPEG使用quality值1-100，PNG映射到compress_level 0-9，100对应无压缩）
 
 ## 故障排除
 
